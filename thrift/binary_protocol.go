@@ -20,7 +20,6 @@
 package thrift
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -554,8 +553,23 @@ func safeReadBytes(size int32, trans io.Reader) ([]byte, error) {
 	if size < 0 {
 		return nil, nil
 	}
+	// buf := new(bytes.Buffer)
+	// _, err := io.CopyN(buf, trans, int64(size))
+	// return buf.Bytes(), err
+	bs := make([]byte, size)
+	if err := readStream(trans, bs, int(size)); err == nil {
+		return bs, nil
+	} else {
+		return nil, err
+	}
+}
 
-	buf := new(bytes.Buffer)
-	_, err := io.CopyN(buf, trans, int64(size))
-	return buf.Bytes(), err
+func readStream(is io.Reader, bs []byte, ln int) (err error) {
+	var i int
+	if i, err = is.Read(bs); err == nil {
+		if i < ln {
+			readStream(is, bs[i:], ln-i)
+		}
+	}
+	return
 }
