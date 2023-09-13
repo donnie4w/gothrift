@@ -20,6 +20,7 @@
 package thrift
 
 import (
+	"bytes"
 	"context"
 	"encoding/binary"
 	"fmt"
@@ -28,6 +29,7 @@ import (
 )
 
 type TBinaryProtocol struct {
+	transBuffer   bytes.Buffer
 	trans         TRichTransport
 	origTransport TTransport
 	cfg           *TConfiguration
@@ -212,28 +214,28 @@ func (p *TBinaryProtocol) WriteBool(ctx context.Context, value bool) error {
 }
 
 func (p *TBinaryProtocol) WriteByte(ctx context.Context, value int8) error {
-	e := p.trans.WriteByte(byte(value))
+	e := p.transBuffer.WriteByte(byte(value))
 	return NewTProtocolException(e)
 }
 
 func (p *TBinaryProtocol) WriteI16(ctx context.Context, value int16) error {
 	v := p.buffer[0:2]
 	binary.BigEndian.PutUint16(v, uint16(value))
-	_, e := p.trans.Write(v)
+	_, e := p.transBuffer.Write(v)
 	return NewTProtocolException(e)
 }
 
 func (p *TBinaryProtocol) WriteI32(ctx context.Context, value int32) error {
 	v := p.buffer[0:4]
 	binary.BigEndian.PutUint32(v, uint32(value))
-	_, e := p.trans.Write(v)
+	_, e := p.transBuffer.Write(v)
 	return NewTProtocolException(e)
 }
 
 func (p *TBinaryProtocol) WriteI64(ctx context.Context, value int64) error {
 	v := p.buffer[0:8]
 	binary.BigEndian.PutUint64(v, uint64(value))
-	_, err := p.trans.Write(v)
+	_, err := p.transBuffer.Write(v)
 	return NewTProtocolException(err)
 }
 
@@ -246,7 +248,7 @@ func (p *TBinaryProtocol) WriteString(ctx context.Context, value string) error {
 	if e != nil {
 		return e
 	}
-	_, err := p.trans.WriteString(value)
+	_, err := p.transBuffer.WriteString(value)
 	return NewTProtocolException(err)
 }
 
@@ -255,12 +257,12 @@ func (p *TBinaryProtocol) WriteBinary(ctx context.Context, value []byte) error {
 	if e != nil {
 		return e
 	}
-	_, err := p.trans.Write(value)
+	_, err := p.transBuffer.Write(value)
 	return NewTProtocolException(err)
 }
 
 func (p *TBinaryProtocol) WriteUUID(ctx context.Context, value Tuuid) error {
-	_, err := p.trans.Write(value[:])
+	_, err := p.transBuffer.Write(value[:])
 	return NewTProtocolException(err)
 }
 
@@ -502,6 +504,12 @@ func (p *TBinaryProtocol) ReadUUID(ctx context.Context) (value Tuuid, err error)
 }
 
 func (p *TBinaryProtocol) Flush(ctx context.Context) (err error) {
+	p.trans.Write(p.transBuffer.Bytes())
+	if p.transBuffer.Len() > 1<<17 {
+		p.transBuffer = *bytes.NewBuffer([]byte{})
+	} else {
+		p.transBuffer.Reset()
+	}
 	return NewTProtocolException(p.trans.Flush(ctx))
 }
 
