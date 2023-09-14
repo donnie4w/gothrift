@@ -104,7 +104,7 @@ func (p *TCompactProtocolFactory) SetTConfiguration(conf *TConfiguration) {
 }
 
 type TCompactProtocol struct {
-	transBuffer   bytes.Buffer
+	transBuffer   *TMemoryBuffer
 	trans         TRichTransport
 	origTransport TTransport
 
@@ -142,11 +142,12 @@ func NewTCompactProtocolConf(trans TTransport, conf *TConfiguration) *TCompactPr
 		cfg:           conf,
 	}
 	if et, ok := trans.(TRichTransport); ok {
-		// p.trans = et
 		p.trans = et
 	} else {
-		// p.trans = NewTRichTransport(trans)
 		p.trans = NewTRichTransport(trans)
+	}
+	if _, ok := trans.(*TMemoryBuffer); !ok {
+		p.transBuffer = NewTMemoryBuffer()
 	}
 	return p
 }
@@ -329,7 +330,8 @@ func (p *TCompactProtocol) WriteI64(ctx context.Context, value int64) error {
 func (p *TCompactProtocol) WriteDouble(ctx context.Context, value float64) error {
 	buf := p.buffer[0:8]
 	binary.LittleEndian.PutUint64(buf, math.Float64bits(value))
-	_, err := p.transBuffer.Write(buf)
+	// _, err := p.trans.Write(buf)
+	_, err := p._write(buf)
 	return NewTProtocolException(err)
 }
 
@@ -342,8 +344,35 @@ func (p *TCompactProtocol) WriteString(ctx context.Context, value string) error 
 	if len(value) == 0 {
 		return nil
 	}
-	_, e = p.transBuffer.WriteString(value)
+	// _, e = p.trans.WriteString(value)
+	_, e = p._writeString(value)
 	return e
+}
+
+func (p *TCompactProtocol) _write(buf []byte) (n int, e error) {
+	if p.transBuffer != nil {
+		n, e = p.transBuffer.Write(buf)
+	} else {
+		n, e = p.trans.Write(buf)
+	}
+	return
+}
+
+func (p *TCompactProtocol) _writeString(value string) (n int, e error) {
+	if p.transBuffer != nil {
+		_, e = p.transBuffer.WriteString(value)
+	} else {
+		_, e = p.trans.WriteString(value)
+	}
+	return
+}
+func (p *TCompactProtocol) _writeByte(value byte) (e error) {
+	if p.transBuffer != nil {
+		e = p.transBuffer.WriteByte(value)
+	} else {
+		e = p.trans.WriteByte(value)
+	}
+	return
 }
 
 // Write a byte array, using a varint for the size.
@@ -353,7 +382,8 @@ func (p *TCompactProtocol) WriteBinary(ctx context.Context, bin []byte) error {
 		return NewTProtocolException(e)
 	}
 	if len(bin) > 0 {
-		_, e = p.transBuffer.Write(bin)
+		// _, e = p.trans.Write(bin)
+		_, e = p._write(bin)
 		return NewTProtocolException(e)
 	}
 	return nil
@@ -361,7 +391,8 @@ func (p *TCompactProtocol) WriteBinary(ctx context.Context, bin []byte) error {
 
 // Write a Tuuid to the wire as 16 bytes.
 func (p *TCompactProtocol) WriteUUID(ctx context.Context, value Tuuid) error {
-	_, err := p.transBuffer.Write(value[:])
+	// _, err := p.trans.Write(value[:])
+	_, err := p._write(value[:])
 	return NewTProtocolException(err)
 }
 
@@ -661,11 +692,9 @@ func (p *TCompactProtocol) ReadUUID(ctx context.Context) (value Tuuid, err error
 }
 
 func (p *TCompactProtocol) Flush(ctx context.Context) (err error) {
-	p.trans.Write(p.transBuffer.Bytes())
-	if p.transBuffer.Len() > 1<<17 {
-		p.transBuffer = *bytes.NewBuffer([]byte{})
-	} else {
-		p.transBuffer.Reset()
+	if p.transBuffer != nil {
+		p.trans.Write(p.transBuffer.Bytes())
+		p.transBuffer.Buffer = &bytes.Buffer{}
 	}
 	return NewTProtocolException(p.trans.Flush(ctx))
 }
@@ -716,7 +745,8 @@ func (p *TCompactProtocol) writeVarint32(n int32) (int, error) {
 			n = int32(u >> 7)
 		}
 	}
-	return p.transBuffer.Write(i32buf[0:idx])
+	// return p.trans.Write(i32buf[0:idx])
+	return p._write(i32buf[0:idx])
 }
 
 // Write an i64 as a varint. Results in 1-10 bytes on the wire.
@@ -735,7 +765,8 @@ func (p *TCompactProtocol) writeVarint64(n int64) (int, error) {
 			n = int64(u >> 7)
 		}
 	}
-	return p.transBuffer.Write(varint64out[0:idx])
+	// return p.trans.Write(varint64out[0:idx])
+	return p._write(varint64out[0:idx])
 }
 
 // Convert l into a zigzag long. This allows negative numbers to be
@@ -753,7 +784,8 @@ func (p *TCompactProtocol) int32ToZigzag(n int32) int32 {
 // Writes a byte without any possibility of all that field header nonsense.
 // Used internally by other writing methods that know they need to write a byte.
 func (p *TCompactProtocol) writeByteDirect(b byte) error {
-	return p.transBuffer.WriteByte(b)
+	// return p.transBuffer.WriteByte(b)
+	return p._writeByte(b)
 }
 
 //
