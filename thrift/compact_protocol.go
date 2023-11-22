@@ -20,7 +20,6 @@
 package thrift
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"errors"
@@ -366,6 +365,7 @@ func (p *TCompactProtocol) _writeString(value string) (n int, e error) {
 	}
 	return
 }
+
 func (p *TCompactProtocol) _writeByte(value byte) (e error) {
 	if p.transBuffer != nil {
 		e = p.transBuffer.WriteByte(value)
@@ -694,7 +694,7 @@ func (p *TCompactProtocol) ReadUUID(ctx context.Context) (value Tuuid, err error
 func (p *TCompactProtocol) Flush(ctx context.Context) (err error) {
 	if p.transBuffer != nil {
 		p.trans.Write(p.transBuffer.Bytes())
-		p.transBuffer.Buffer = &bytes.Buffer{}
+		p.transBuffer = NewTMemoryBuffer()
 	}
 	return NewTProtocolException(p.trans.Flush(ctx))
 }
