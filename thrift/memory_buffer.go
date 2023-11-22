@@ -75,6 +75,14 @@ func (p *TMemoryBuffer) Flush(ctx context.Context) error {
 	return nil
 }
 
+func (p *TMemoryBuffer) Bytes() []byte {
+	return p.Buffer.Bytes()
+}
+
+func (p *TMemoryBuffer) Write(buf []byte) (n int, e error) {
+	return p.Buffer.Write(buf)
+}
+
 func (p *TMemoryBuffer) RemainingBytes() (num_bytes uint64) {
 	return uint64(p.Buffer.Len())
 }
