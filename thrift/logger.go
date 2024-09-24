@@ -38,44 +38,44 @@ import (
 //
 // Deprecated: This is no longer used by any thrift go library code,
 // will be removed in the future version.
- type Logger func(msg string)
- 
- // NopLogger is a Logger implementation that does nothing.
- //
- // Deprecated: This is no longer used by any thrift go library code,
- // will be removed in the future version.
- func NopLogger(msg string) {}
- 
- // StdLogger wraps stdlib log package into a Logger.
- //
- // If logger passed in is nil, it will fallback to use stderr and default flags.
- //
- // Deprecated: This is no longer used by any thrift go library code,
- // will be removed in the future version.
- func StdLogger(logger *log.Logger) Logger {
-	 if logger == nil {
-		 logger = log.New(os.Stderr, "", log.LstdFlags)
-	 }
-	 return func(msg string) {
-		 logger.Print(msg)
-	 }
- }
- 
- // TestLogger is a Logger implementation can be used in test codes.
- //
- // It fails the test when being called.
- //
- // Deprecated: This is no longer used by any thrift go library code,
- // will be removed in the future version.
- func TestLogger(tb testing.TB) Logger {
-	 return func(msg string) {
-		 tb.Errorf("logger called with msg: %q", msg)
-	 }
- }
- 
- func fallbackLogger(logger Logger) Logger {
-	 if logger == nil {
-		 return StdLogger(nil)
-	 }
-	 return logger
- }
+type Logger func(msg string)
+
+// NopLogger is a Logger implementation that does nothing.
+//
+// Deprecated: This is no longer used by any thrift go library code,
+// will be removed in the future version.
+func NopLogger(msg string) {}
+
+// StdLogger wraps stdlib log package into a Logger.
+//
+// If logger passed in is nil, it will fallback to use stderr and default flags.
+//
+// Deprecated: This is no longer used by any thrift go library code,
+// will be removed in the future version.
+func StdLogger(logger *log.Logger) Logger {
+	if logger == nil {
+		logger = log.New(os.Stderr, "", log.LstdFlags)
+	}
+	return func(msg string) {
+		logger.Print(msg)
+	}
+}
+
+// TestLogger is a Logger implementation can be used in test codes.
+//
+// It fails the test when being called.
+//
+// Deprecated: This is no longer used by any thrift go library code,
+// will be removed in the future version.
+func TestLogger(tb testing.TB) Logger {
+	return func(msg string) {
+		tb.Errorf("logger called with msg: %q", msg)
+	}
+}
+
+func fallbackLogger(logger Logger) Logger {
+	if logger == nil {
+		return StdLogger(nil)
+	}
+	return logger
+}

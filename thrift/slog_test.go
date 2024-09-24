@@ -24,14 +24,14 @@ import (
 	"strings"
 	"testing"
 )
- 
- func TestSlogTStructWrapperJSON(t *testing.T) {
-	 // This test just ensures that we don't have infinite recursion when
-	 // json encoding it. More comprehensive tests are under lib/go/test.
-	 v := SlogTStructWrapper{Type: "foo"}
-	 var sb strings.Builder
-	 if err := json.NewEncoder(&sb).Encode(v); err != nil {
-		 t.Fatal(err)
-	 }
-	 t.Log(strings.TrimSuffix(sb.String(), "\n"))
- }
+
+func TestSlogTStructWrapperJSON(t *testing.T) {
+	// This test just ensures that we don't have infinite recursion when
+	// json encoding it. More comprehensive tests are under lib/go/test.
+	v := SlogTStructWrapper{Type: "foo"}
+	var sb strings.Builder
+	if err := json.NewEncoder(&sb).Encode(v); err != nil {
+		t.Fatal(err)
+	}
+	t.Log(strings.TrimSuffix(sb.String(), "\n"))
+}

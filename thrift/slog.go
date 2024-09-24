@@ -27,29 +27,29 @@ import (
 
 // SlogTStructWrapper is a wrapper used by the compiler to wrap TStruct and
 // TException to be better logged by slog.
- type SlogTStructWrapper struct {
-	 Type  string  `json:"type"`
-	 Value TStruct `json:"value"`
- }
- 
- var (
-	 _ fmt.Stringer   = SlogTStructWrapper{}
-	 _ json.Marshaler = SlogTStructWrapper{}
- )
- 
- func (w SlogTStructWrapper) MarshalJSON() ([]byte, error) {
-	 // Use an alias to avoid infinite recursion
-	 type alias SlogTStructWrapper
-	 return json.Marshal(alias(w))
- }
- 
- func (w SlogTStructWrapper) String() string {
-	 var sb strings.Builder
-	 sb.WriteString(w.Type)
-	 if err := json.NewEncoder(&sb).Encode(w.Value); err != nil {
-		 // Should not happen, but just in case
-		 return fmt.Sprintf("%s: %v", w.Type, w.Value)
-	 }
-	 // json encoder will write an additional \n at the end, get rid of it
-	 return strings.TrimSuffix(sb.String(), "\n")
- }
+type SlogTStructWrapper struct {
+	Type  string  `json:"type"`
+	Value TStruct `json:"value"`
+}
+
+var (
+	_ fmt.Stringer   = SlogTStructWrapper{}
+	_ json.Marshaler = SlogTStructWrapper{}
+)
+
+func (w SlogTStructWrapper) MarshalJSON() ([]byte, error) {
+	// Use an alias to avoid infinite recursion
+	type alias SlogTStructWrapper
+	return json.Marshal(alias(w))
+}
+
+func (w SlogTStructWrapper) String() string {
+	var sb strings.Builder
+	sb.WriteString(w.Type)
+	if err := json.NewEncoder(&sb).Encode(w.Value); err != nil {
+		// Should not happen, but just in case
+		return fmt.Sprintf("%s: %v", w.Type, w.Value)
+	}
+	// json encoder will write an additional \n at the end, get rid of it
+	return strings.TrimSuffix(sb.String(), "\n")
+}
